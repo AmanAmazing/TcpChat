@@ -4,30 +4,25 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+
 )
 
-type Room struct {
-	Name         string
-	Participants []string
-	Full         bool
-}
-
-var Chatroom = Room{
-	Name:         "testing",
-	Participants: make([]string, 5),
-	Full:         false,
-}
 
 func main() {
-	ln, err := net.Listen("tcp", ":8000")
+	port := ":8000"
+	listner, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Println(err)
+		os.Exit(1)
 	}
+	defer listner.Close()
+	fmt.Println("Server is listening on port: ",port)
 	for {
-		conn, err := ln.Accept()
+		conn, err := listner.Accept()
 		if err != nil {
 			fmt.Println(err)
-			conn.Close()
+            continue
 		}
 		go HandleConn(conn)
 
@@ -35,13 +30,16 @@ func main() {
 }
 
 func HandleConn(conn net.Conn) {
+    defer conn.Close()
 	fmt.Println("Following IP address connected: ", conn.RemoteAddr())
-    Chatroom.Participants = append(Chatroom.Participants, conn.RemoteAddr().String())
-	n, err := conn.Write([]byte("this is not encrypted!"))
-	if err != nil {
-        // need to remove the connection from the chatroom participants pool  
-        fmt.Println("Connection closed for: ",conn.RemoteAddr().String())
-        conn.Close()
-	}
-	fmt.Println(n)
+    buffer := make([]byte,1024)
+    for {
+        n, err := conn.Read(buffer)
+        if err !=nil {
+            fmt.Println("Error reading from connection:",err)
+            return
+        }
+        message := string(buffer[:n])
+        fmt.Println("Received:",message)
+    }
 }
