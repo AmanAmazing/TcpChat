@@ -9,14 +9,16 @@ import (
 )
 
 func main() {
-    conn, err := net.Dial("tcp","192.168.0.27:8000")
+    // conn, err := net.Dial("tcp","139.162.227.61:8000")
+    conn, err := net.Dial("tcp",":8000")
     if err !=nil{
         fmt.Println(err)
         os.Exit(1)
     }
     defer conn.Close()
+
+    go readMessages(conn)
     
-    //buffer := make([]byte,1024)
     for {
         // get user input 
         reader := bufio.NewReader(os.Stdin)
@@ -33,5 +35,17 @@ func main() {
             fmt.Println("Error sending the message")
             continue
         }
+    }
+}
+
+func readMessages(conn net.Conn){
+    for {
+        message := make([]byte,1024)
+        length, err := conn.Read(message)
+        if err != nil {
+            fmt.Println("Failed to read message from server:",err)
+            os.Exit(1)
+        }
+        fmt.Println(string(message[:length]))
     }
 }
